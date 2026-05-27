@@ -1,0 +1,36 @@
+name: media_dev
+
+services:
+  app:
+    build: .
+    container_name: media_dev_app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8028:8000"
+    environment:
+      - SERVICE_NAME=${SERVICE_NAME}
+      - VERSION=${VERSION:-0.1.0}
+      - DATABASE_URL=${DATABASE_URL}
+      - STORAGE_ROOT=${STORAGE_ROOT:-/srv/storage}
+      - MAX_UPLOAD_BYTES=${MAX_UPLOAD_BYTES:-10485760}
+      - ALLOWED_MIME_PREFIXES=${ALLOWED_MIME_PREFIXES:-image/,audio/,video/,application/pdf,application/zip}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-}
+      - MEDIA_CONSUMERS=${MEDIA_CONSUMERS:-}
+      - MEDIA_GC_TOKEN=${MEDIA_GC_TOKEN:-}
+      - MEDIA_GC_GRACE_DAYS=${MEDIA_GC_GRACE_DAYS:-7}
+      - MEDIA_GC_ENABLED=${MEDIA_GC_ENABLED:-true}
+      - MEDIA_GC_CRON_HOUR=${MEDIA_GC_CRON_HOUR:-3}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - /root/web/dev/media/storage:/srv/storage
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/info"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    networks:
+      - shared
+
+networks:
+  shared:
+    external: true
