@@ -20,6 +20,7 @@ from app.core.deps import current_uploader
 from app.core.exceptions import APIError
 from app.core.storage import promote_tmp, save_stream, shard_path, thumb_path
 from app.core.thumbs import THUMB_MIME, gen_thumb, is_image_mime, validate_image
+from app.core.transcode import sha256_of_file, transcode_progressive_jpeg
 from app.models.models import Asset
 from app.schemas.asset import AssetResponse
 
@@ -66,6 +67,12 @@ async def upload_asset(
         except Exception:
             tmp_path.unlink(missing_ok=True)
             raise
+
+    # Прогрессивный JPEG → blur-first рендер на медленных сетях.
+    # Карта `2026-06-07-progressive-image-preview.md`. Не-JPEG / уже-progressive
+    # → no-op (False), sha256 не меняем.
+    if mime == "image/jpeg" and transcode_progressive_jpeg(tmp_path):
+        sha256, total = sha256_of_file(tmp_path)
 
     existing = (await db.execute(select(Asset).where(Asset.sha256 == sha256))).scalar_one_or_none()
     if existing:
