@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.deps import current_user_email
+from app.core.deps import current_uploader
 from app.core.exceptions import APIError
 from app.core.storage import promote_tmp, save_stream, shard_path, thumb_path
 from app.core.thumbs import THUMB_MIME, gen_thumb, is_image_mime, validate_image
@@ -50,7 +50,7 @@ async def _chunks_from_upload(upload: UploadFile):
 async def upload_asset(
     file: UploadFile,
     db: AsyncSession = Depends(get_db),
-    user_email: str = Depends(current_user_email),
+    uploader: str = Depends(current_uploader),
 ):
     mime = (file.content_type or "").lower()
     if not _mime_allowed(mime):
@@ -88,7 +88,7 @@ async def upload_asset(
         has_thumb=has_thumb,
         thumb_mime=THUMB_MIME if has_thumb else None,
         thumb_bytes=thumb_bytes_size,
-        uploaded_by=user_email,
+        uploaded_by=uploader,
         created_at=int(time.time() * 1000),
     )
     db.add(asset)
